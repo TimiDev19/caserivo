@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/browser';
 import { useToast } from '@/components/toast-provider';
 import Brand from '@/components/brand';
+import { authCallbackUrl } from '@/lib/auth-urls';
 
 export default function AuthForm({ mode }: { mode: 'login'|'signup'|'forgot' }) {
   const [error, setError] = useState('');
@@ -39,7 +40,7 @@ export default function AuthForm({ mode }: { mode: 'login'|'signup'|'forgot' }) 
           password,
           options: {
             data: { full_name: String(form.get('name') ?? '').trim(), firm_name: firmName, firm_email: firmEmail, country, currency },
-            emailRedirectTo: `${location.origin}/auth/callback?flow=signup&next=/dashboard`,
+            emailRedirectTo: authCallbackUrl('?flow=signup&next=/dashboard'),
           },
         });
         if (authError) fail(authError.message);
@@ -55,7 +56,7 @@ export default function AuthForm({ mode }: { mode: 'login'|'signup'|'forgot' }) 
           else { toast('Your firm workspace is ready.', 'success'); router.push('/dashboard'); }
         }
       } else {
-        const { error: authError } = await db.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/auth/callback?next=/reset-password` });
+        const { error: authError } = await db.auth.resetPasswordForEmail(email, { redirectTo: authCallbackUrl('?next=/reset-password') });
         if (authError) fail(authError.message);
         else { toast('If an account exists, a reset link is on its way.', 'success'); router.push(`/forgot-password/sent?email=${encodeURIComponent(email)}`); }
       }

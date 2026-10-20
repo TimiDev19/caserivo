@@ -1,8 +1,27 @@
 import Link from 'next/link';
 import { ArrowUpRight, CalendarDays, FileText, ShieldCheck, Scale, UsersRound } from 'lucide-react';
 import Brand, { BrandIcon } from '@/components/brand';
+import ThemeToggle from '@/components/theme-toggle';
+import type { Metadata } from 'next';
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://caserivo.netlify.app';
+export const metadata: Metadata = {
+  title: 'Legal Practice Management Software for Modern Law Firms',
+  description: 'Bring clients, legal cases, court dates, and invoicing together in one calm, secure workspace built for modern law firms.',
+  alternates: { canonical: '/' },
+};
+
 export default function Home() {
-  return <main className="marketing"><nav className="topnav"><Link href="/" className="brand" aria-label="Caserivo home"><Brand/></Link><div className="navlinks"><a href="#features">Features</a><a href="#security">Security</a><Link href="/login">Log in</Link><Link className="button button-dark" href="/signup">Get started <ArrowUpRight size={16}/></Link></div></nav>
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Caserivo',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    url: siteUrl,
+    description: 'Legal practice management software for managing clients, cases, court hearings, and invoices.',
+  };
+  return <main className="marketing"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}/><nav className="topnav"><Link href="/" className="brand" aria-label="Caserivo home"><Brand/></Link><div className="navlinks"><a href="#features">Features</a><a href="#security">Security</a><Link href="/login">Log in</Link><ThemeToggle/><Link className="button button-dark" href="/signup">Get started <ArrowUpRight size={16}/></Link></div></nav>
     <section className="hero"><div className="hero-copy"><div className="eyebrow"><span/> LEGAL PRACTICE, IN GOOD ORDER</div><h1>Better organisation.<br/><em>Stronger cases.</em></h1><p>Manage your clients, track legal cases, stay ahead of court dates, and create professional invoices — all from one workspace.</p><div className="hero-actions"><Link className="button button-primary" href="/signup">Get started <ArrowUpRight size={17}/></Link><a className="button button-quiet" href="#features">Explore features <span>↓</span></a></div><div className="hero-note"><ShieldCheck size={16}/> Private workspaces for your firm</div></div>
     <div className="hero-art"><div className="halo"/><div className="mock-window"><div className="mock-head"><div className="brand mini"><BrandIcon scheme="light"/> caserivo</div><span className="avatar">AM</span></div><div className="mock-body"><div className="mock-greeting">MONDAY, 20 OCTOBER 2026</div><h3>Good morning, Adaeze</h3><div className="metric-grid"><div><small>ACTIVE CASES</small><b>24</b><span>Across your firm</span></div><div><small>UPCOMING HEARINGS</small><b>06</b><span>Next 30 days</span></div></div><div className="mock-section">UP NEXT <span>View diary ↗</span></div><div className="hearing"><div className="datebox"><b>22</b><small>OCT</small></div><div><b>Okafor v. Meridian Bank</b><small>Federal High Court · 10:00 AM</small></div><span className="tag">IN 2 DAYS</span></div><div className="hearing"><div className="datebox pale"><b>24</b><small>OCT</small></div><div><b>State v. Nwosu</b><small>Ikeja High Court · 11:30 AM</small></div><span className="tag muted">IN 4 DAYS</span></div></div></div><div className="float-card"><span className="float-icon"><FileText size={17}/></span><div><b>Invoice paid</b><small>₦850,000.00 · just now</small></div><span className="check">✓</span></div></div></section>
     <div className="trust-strip"><span>ONE WORKSPACE TO STAY AHEAD</span><div><span><UsersRound size={16}/> Clients</span><span><Scale size={16}/> Cases</span><span><CalendarDays size={16}/> Court diary</span><span><FileText size={16}/> Invoicing</span></div></div>

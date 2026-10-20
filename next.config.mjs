@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Keep `next build` from replacing chunks used by a running `next dev` server.
-  distDir: process.env.NODE_ENV === 'production' ? '.next-production' : '.next-development',
+  // Netlify's Next.js adapter expects the production build in `.next`.
+  // Keep development output separate so `next dev` cannot reuse production chunks.
+  distDir: process.env.NODE_ENV === 'production' ? '.next' : '.next-development',
   webpack(config) {
     config.watchOptions = {
       ...config.watchOptions,

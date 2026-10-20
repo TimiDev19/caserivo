@@ -7,8 +7,10 @@ Caserivo is a Next.js and Supabase foundation for a legal practice workspace. Th
 1. Install Node.js 20+ and create a Supabase project.
 2. Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 3. Apply `supabase/migrations/20261020090815_caserivo_initial_schema.sql` in the Supabase SQL editor or with `supabase db push` after linking the project.
-4. In Supabase Auth, enable email/password and set the site URL and redirect URLs for `http://localhost:3000`.
+4. In Supabase Auth, enable email/password and set the site URL and redirect URLs to `https://caserivo.netlify.app` (including `/auth/callback`).
 5. Run `npm install`, then `npm run dev`.
+
+Set `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_APP_URL` to `https://caserivo.netlify.app` in Netlify. The former is used for canonical URLs, sitemap links, and structured metadata; the latter is used for auth email callbacks.
 
 New users enter firm details during signup. After they verify their email, the callback creates their firm workspace automatically. RLS derives access from `auth.uid()` and firm membership; the browser's firm ID is never treated as authorization. `.env.example` documents optional service-role, Resend, and scheduler configuration. Never put `SUPABASE_SERVICE_ROLE_KEY` in a `NEXT_PUBLIC_` variable.
 
@@ -22,7 +24,7 @@ Authentication email is sent by Supabase Auth. A production hearing reminder wor
 
 ## Deployment
 
-Deploy the Next.js app to Vercel, set the environment values in the project, configure Supabase production Auth URLs, and apply migrations to the production database. Keep Supabase backups enabled and test restoration. Configure rate limits, email delivery, monitoring, and a reviewed privacy notice/terms before inviting firms. This starter is not a legal compliance certification; review NDPA obligations, retention, processor agreements, access policies, and incident procedures with qualified counsel.
+Deploy the Next.js app to Netlify with `pnpm run build`; the production output is written to `.next` for the Netlify Next.js adapter. Set `NEXT_PUBLIC_SITE_URL`, the Supabase environment values, and production Auth redirect URLs in Netlify, then apply migrations to the production database. Keep Supabase backups enabled and test restoration. Configure rate limits, email delivery, monitoring, and reviewed privacy notice/terms before inviting firms. This starter is not a legal compliance certification; review NDPA obligations, retention, processor agreements, access policies, and incident procedures with qualified counsel.
 
 ## Current feature status
 

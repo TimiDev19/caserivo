@@ -6,6 +6,7 @@ import { MailCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/browser';
 import { useToast } from '@/components/toast-provider';
 import Brand from '@/components/brand';
+import { authCallbackUrl } from '@/lib/auth-urls';
 
 export default function VerifyEmail({ initialEmail }: { initialEmail: string }) {
   const [email, setEmail] = useState(initialEmail);
@@ -18,7 +19,7 @@ export default function VerifyEmail({ initialEmail }: { initialEmail: string }) 
     if (!db) { toast('Supabase is not configured.', 'error'); setBusy(false); return; }
     const { error } = await db.auth.resend({
       type: 'signup', email,
-      options: { emailRedirectTo: `${location.origin}/auth/callback?flow=signup&next=/dashboard` },
+      options: { emailRedirectTo: authCallbackUrl('?flow=signup&next=/dashboard') },
     });
     if (error) toast(error.message, 'error');
     else toast('A new verification email is on its way.', 'success');
