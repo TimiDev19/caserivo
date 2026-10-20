@@ -1,0 +1,2 @@
+import RecordManager from '@/components/record-manager';
+export default function Diary(){return <RecordManager config={{title:'Hearings',table:'hearings',fields:[{name:'title',label:'Hearing or event'},{name:'client_id',label:'Client',type:'client-select'},{name:'court_name',label:'Court name'},{name:'starts_at',label:'Date and time',type:'datetime-local'}],columns:[{key:'title',label:'Hearing'},{key:'client_name',label:'Client'},{key:'court_name',label:'Court'},{key:'starts_at',label:'Date'},{key:'status',label:'Status'}]}}/>}

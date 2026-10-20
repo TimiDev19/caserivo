@@ -1,0 +1,2 @@
+import RecordManager from '@/components/record-manager';
+export default function Clients(){return <RecordManager config={{title:'Clients',table:'clients',fields:[{name:'name',label:'Full name or organisation'},{name:'email',label:'Email address',type:'email',required:false},{name:'phone',label:'Phone number',required:false}],columns:[{key:'name',label:'Client'},{key:'email',label:'Email'},{key:'phone',label:'Phone'},{key:'created_at',label:'Created'}]}}/>}

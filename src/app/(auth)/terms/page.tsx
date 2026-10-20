@@ -1,0 +1,1 @@
+export default function Terms(){return <main className="auth-content"><article className="auth-form"><h2>Terms of service</h2><p>These draft terms are placeholders, not a binding agreement. The service operator must add reviewed terms before accepting customers.</p></article></main>}
