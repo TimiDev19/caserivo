@@ -8,7 +8,7 @@ import { useToast } from '@/components/toast-provider';
 import Modal from '@/components/modal';
 import { motion } from 'framer-motion';
 
-type Config = { title: string; table: string; fields: { name: string; label: string; type?: string; required?: boolean }[]; columns: { key: string; label: string }[]; filters?: Record<string, string> };
+type Config = { title: string; table: string; fields: { name: string; label: string; type?: string; required?: boolean; options?: { value: string; label: string }[] }[]; columns: { key: string; label: string }[]; filters?: Record<string, string> };
 function localDateTime(value: string) {
   const date = new Date(value);
   date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
@@ -66,25 +66,33 @@ export default function RecordManager({ config }: { config: Config }) {
       const payload: Record<string, any> = editing ? {} : { firm_id: member.firm_id, created_by: user.id };
       for (const field of config.fields) {
         const value = form.get(field.name);
+        if (field.type === 'client-select' && editing) {
+          payload[field.name] = value || null;
+          continue;
+        }
         if (field.name === 'starts_at' && value) payload[field.name] = new Date(String(value)).toISOString();
         else if (value !== null && value !== '') payload[field.name] = value;
       }
-      if (config.table === 'cases' && payload.status) {
-        payload.closed_at = payload.status === 'closed'
-          ? editing?.closed_at ?? new Date().toISOString()
-          : payload.status === 'archived' ? editing?.closed_at ?? null : null;
+      // Avoid sending closed_at for ordinary active cases. Some deployed databases
+      // may not yet have the optional case close-date migration applied.
+      if (config.table === 'cases' && payload.status === 'closed') {
+        payload.closed_at = editing?.closed_at ?? new Date().toISOString();
       }
       if (config.table === 'cases' && !payload.reference) payload.reference = `CASE-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
       const { data: savedRows, error: saveError } = editing
         ? await db.from(config.table).update(payload).eq('id', editing.id).eq('firm_id', member.firm_id).select('id')
-        : await db.from(config.table).insert(payload);
+        : await db.from(config.table).insert(payload).select('id');
       if (saveError) throw saveError;
       if (editing && (!savedRows || savedRows.length === 0)) throw new Error('This case was not updated. Check your access and try again.');
       setOpen(false); setEditing(null);
       toast(`${config.title.slice(0, -1)} ${editing ? 'updated' : 'saved'}.`, 'success');
       await load();
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Could not save this record. Please try again.';
+      const message = cause instanceof Error
+        ? cause.message
+        : typeof cause === 'object' && cause !== null && 'message' in cause
+          ? String((cause as { message: unknown }).message)
+          : 'Could not save this record. Please try again.';
       setError(message); toast(message, 'error');
     } finally { setBusy(false); }
   }
@@ -94,7 +102,7 @@ export default function RecordManager({ config }: { config: Config }) {
     const db = createClient(); if (!db) return;
     const { data, error: deleteError } = await db.from(config.table).delete().eq('id', row.id).select('id');
     if (deleteError) { setError(deleteError.message); toast('Could not delete this record.', 'error'); }
-    else if (!data?.length) { setError('This case could not be deleted. Check your access and try again.'); }
+    else if (!data?.length) { const message = `This ${config.title.slice(0, -1).toLowerCase()} could not be deleted. Check your access and try again.`; setError(message); toast(message, 'error'); }
     else { toast('Record deleted.', 'success'); await load(); }
   }
 
@@ -107,7 +115,7 @@ export default function RecordManager({ config }: { config: Config }) {
   return <motion.main className="app-content" initial={{ opacity: 0, y: 7 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.32, ease: 'easeOut' }}>
     <div className="welcome-row"><div><h2>{config.title}</h2><p>Manage and find your firm’s {config.title.toLowerCase()}.</p></div><button className="button button-primary button-small" onClick={() => { setEditing(null); setOpen(!open); }}><Plus size={14}/>{open ? 'Close' : `Add ${config.title.slice(0, -1)}`}</button></div>
     {error && <div className="notice-bar" role="alert">{error}</div>}
-    {open && <Modal title={editing ? `Edit ${config.title.slice(0, -1).toLowerCase()}` : `Create ${config.title.slice(0, -1).toLowerCase()}`} onClose={() => setOpen(false)}><form key={editing?.id ?? 'new'} onSubmit={save}><div className="feature-grid form-grid">{config.fields.map((field) => <label className="field" key={field.name}><span>{field.label}</span>{field.type === 'client-select' ? <select name={field.name} required defaultValue={editing?.[field.name] ?? ''}><option value="" disabled>Select a client</option>{clientOptions.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select> : field.type === 'select' ? <select name={field.name} defaultValue={editing?.[field.name] ?? 'active'}><option value="active">Active</option><option value="closed">Closed</option><option value="archived">Archived</option></select> : field.type === 'textarea' ? <textarea name={field.name} required={field.required !== false} placeholder={field.label} rows={4} defaultValue={editing?.[field.name] ?? ''}/> : <input name={field.name} type={field.type ?? 'text'} required={field.required !== false} placeholder={field.label} defaultValue={field.name === 'starts_at' && editing?.[field.name] ? localDateTime(editing[field.name]) : editing?.[field.name] ?? ''}/>}</label>)}</div><div className="modal-footer"><button type="button" className="button button-quiet button-small" onClick={() => setOpen(false)}>Cancel</button><button className="button button-primary button-small" disabled={busy}>{busy ? <><span className="button-spinner"/> Saving…</> : editing ? `Update ${config.title.slice(0, -1).toLowerCase()}` : `Save ${config.title.slice(0, -1).toLowerCase()}`}</button></div></form></Modal>}
+    {open && <Modal title={editing ? `Edit ${config.title.slice(0, -1).toLowerCase()}` : `Create ${config.title.slice(0, -1).toLowerCase()}`} onClose={() => setOpen(false)}><form key={editing?.id ?? 'new'} onSubmit={save}><div className="feature-grid form-grid">{config.fields.map((field) => <label className="field" key={field.name}><span>{field.label}</span>{field.type === 'client-select' ? <select name={field.name} required={field.required !== false} defaultValue={editing?.[field.name] ?? ''}><option value="">{field.required === false ? 'No client' : 'Select a client'}</option>{clientOptions.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select> : field.type === 'select' ? <select name={field.name} defaultValue={editing?.[field.name] ?? field.options?.[0]?.value ?? 'active'}>{(field.options ?? [{ value: 'active', label: 'Active' }, { value: 'closed', label: 'Closed' }, { value: 'archived', label: 'Archived' }]).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : field.type === 'textarea' ? <textarea name={field.name} required={field.required !== false} placeholder={field.label} rows={4} defaultValue={editing?.[field.name] ?? ''}/> : <input name={field.name} type={field.type ?? 'text'} required={field.required !== false} placeholder={field.label} defaultValue={field.name === 'starts_at' && editing?.[field.name] ? localDateTime(editing[field.name]) : editing?.[field.name] ?? ''}/>}</label>)}</div><div className="modal-footer"><button type="button" className="button button-quiet button-small" onClick={() => setOpen(false)}>Cancel</button><button className="button button-primary button-small" disabled={busy}>{busy ? <><span className="button-spinner"/> Saving…</> : editing ? `Update ${config.title.slice(0, -1).toLowerCase()}` : `Save ${config.title.slice(0, -1).toLowerCase()}`}</button></div></form></Modal>}
     {selected && <Modal title={selected.title || selected.name || selected.reference || config.title.slice(0, -1)} onClose={() => setSelected(null)}><div className="record-details">{detailEntries.map((entry) => <div key={entry.key}><span>{entry.label}</span><b>{entry.display}</b></div>)}</div></Modal>}
     <div className="list-toolbar"><label className="searchbox"><Search size={15}/><input placeholder={`Search ${config.title.toLowerCase()}`} value={query} onChange={(event) => setQuery(event.target.value)}/></label></div>
     {!ready ? <div className="list-table loading-table" aria-busy="true" aria-label={`Loading ${config.title.toLowerCase()}`}><div className="table-head" style={{ gridTemplateColumns: `repeat(${config.columns.length}, minmax(100px, 1fr)) 80px` }}>{config.columns.map((column) => <span key={column.key}>{column.label}</span>)}<span>Actions</span></div>{[1,2,3,4].map((item) => <div className="loading-row" key={item}><span/><span/><span/><span/></div>)}</div> : <div className="list-table"><div className="table-head" style={{ gridTemplateColumns: `repeat(${config.columns.length}, minmax(100px, 1fr)) 80px` }}>{config.columns.map((column) => <span key={column.key}>{column.label}</span>)}<span>Actions</span></div>{shown.map((row, index) => <div className="table-row clickable-row" role="button" tabIndex={0} onClick={() => setSelected(row)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelected(row); } }} style={{ gridTemplateColumns: `repeat(${config.columns.length}, minmax(100px, 1fr)) 80px` }} key={row.id ?? index}>{config.columns.map((column, columnIndex) => { const value = row[column.key]; const display = column.key.endsWith('_at') && value ? new Date(value).toLocaleDateString() : value || '—'; return <span key={column.key}>{columnIndex === 0 ? <b>{display}</b> : display}</span>; })}<span className="row-actions"><button type="button" aria-label={`Edit ${config.title.slice(0, -1).toLowerCase()}`} onClick={(event) => { event.stopPropagation(); setEditing(row); setOpen(true); }}><Pencil size={14}/></button><button type="button" aria-label={`Delete ${config.title.slice(0, -1).toLowerCase()}`} onClick={(event) => { event.stopPropagation(); void remove(row); }}><Trash2 size={14}/></button></span></div>)}{shown.length === 0 && <div className="empty-state" style={{ margin: 15 }}><b>{query ? 'No matching records' : `No ${config.title.toLowerCase()} yet`}</b>{query ? 'Try another search term.' : 'Add your first record to get started.'}</div>}</div>}
