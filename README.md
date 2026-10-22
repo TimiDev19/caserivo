@@ -14,6 +14,10 @@ Set `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_APP_URL` to `https://caserivo.netlif
 
 New users enter firm details during signup. After they verify their email, the callback creates their firm workspace automatically. RLS derives access from `auth.uid()` and firm membership; the browser's firm ID is never treated as authorization. `.env.example` documents optional service-role, Resend, and scheduler configuration. Never put `SUPABASE_SERVICE_ROLE_KEY` in a `NEXT_PUBLIC_` variable.
 
+The `/admin` panel uses its own server-side administrator login and signed, HTTP-only session cookie; administrator sign-in is separate from Supabase Auth. Account listing and access changes require the server-only `SUPABASE_SERVICE_ROLE_KEY` so the panel can manage customer Auth accounts. Account deletion uses Supabase Auth soft deletion to prevent sign-in while preserving workspace records; it is irreversible. The panel reads signup fields from Supabase Auth user metadata and does not query firm, case, client, diary, or invoice tables.
+
+Admin suspensions accept a local release date and use Supabase Auth's timed ban. Apply `supabase/migrations/20261022120000_suspended_user_rls.sql` to make RLS reject requests from already-issued sessions while an account is suspended; the ban itself blocks sign-in and expires automatically.
+
 ## Supabase setup
 
 The migration creates tenant-scoped firms, memberships, clients, cases, hearings, invoices, invoice items, payments, documents and audit log tables. It enables RLS and creates a private `firm-documents` bucket with membership-scoped object policies. The `create_firm_workspace` RPC binds ownership to the authenticated user. Apply the migration to a new Supabase project and review policies against your firm's permission model before production use.
